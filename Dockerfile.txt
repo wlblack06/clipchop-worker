@@ -1,0 +1,21 @@
+# Use an official Node runtime as a parent image
+FROM node:18
+
+# Install yt-dlp system-wide
+RUN apt-get update && apt-get install -y yt-dlp
+
+# Set working directory
+WORKDIR /app
+
+# Copy package.json and install dependencies
+COPY package.json ./
+RUN npm install
+
+# Copy source files
+COPY index.js ./
+
+# Expose the port
+EXPOSE 3000
+
+# Start the application
+CMD ["npm", "start"]
