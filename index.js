@@ -4,17 +4,17 @@ const fs = require('fs');
 const path = require('path');
 const ffmpeg = require('fluent-ffmpeg');
 const ytdlp = require('yt-dlp-exec');
-const openai = require('openai');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
+
+const { OpenAI } = require('openai');
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-
-openai.apiKey = process.env.OPENAI_API_KEY;
 
 const limiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -41,7 +41,7 @@ app.post('/process', async (req, res) => {
   try {
     await ytdlp(videoUrl, { output: videoPath });
 
-    const transcript = await openai.audio.transcriptions.create({
+    const transcript = await client.audio.transcriptions.create({
       file: fs.createReadStream(videoPath),
       model: 'whisper-1',
     });
@@ -49,7 +49,7 @@ app.post('/process', async (req, res) => {
     const clipPaths = [];
 
     for (let i = 0; i < clips.length; i++) {
-      const { start, end, title } = clips[i];
+      const { start, end } = clips[i];
       const output = `clip_${i}_${timestamp}.mp4`;
 
       await new Promise((resolve, reject) => {
@@ -85,12 +85,12 @@ app.post('/analyze', async (req, res) => {
   try {
     await ytdlp(videoUrl, { output: videoPath });
 
-    const transcript = await openai.audio.transcriptions.create({
+    const transcript = await client.audio.transcriptions.create({
       file: fs.createReadStream(videoPath),
       model: 'whisper-1',
     });
 
-    const highlightsResponse = await openai.chat.completions.create({
+    const highlightsResponse = await client.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -107,9 +107,9 @@ app.post('/analyze', async (req, res) => {
 ]
 
 Rules:
-- Find 3-6 potential viral moments
-- Each clip should be 15-60 seconds long
-- viral_score should be 1-10 (higher = more viral potential)
+- Find 3–6 potential viral moments
+- Each clip should be 15–60 seconds long
+- viral_score should be 1–10 (higher = more viral potential)
 - Focus on: funny moments, key insights, surprising facts, emotional peaks
 - Return ONLY the JSON array, no other text`
         },
@@ -163,5 +163,5 @@ app.get('/health', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
