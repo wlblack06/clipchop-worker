@@ -1,14 +1,15 @@
-# Use official slim Node.js 18 image for smaller size
+# Use official Node.js image
 FROM node:18-slim
 
-# Install required system packages
+# Install system dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3 python3-pip ffmpeg wget && \
-    rm -rf /var/lib/apt/lists/* && \
-    apt-get clean
+    apt-get install -y curl ffmpeg && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install yt-dlp using pip
-RUN pip3 install yt-dlp
+# Download and install yt-dlp binary
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp  -o /usr/local/bin/yt-dlp && \
+    chmod a+rx /usr/local/bin/yt-dlp
 
 # Set working directory
 WORKDIR /app
@@ -17,11 +18,11 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install
 
-# Copy all source files
-COPY . ./
+# Copy source files
+COPY index.js ./
 
-# Expose the port your app runs on
+# Expose port
 EXPOSE 3000
 
-# Start the application
-CMD ["npm", "start"]
+# Start the app
+CMD ["node", "index.js"]
